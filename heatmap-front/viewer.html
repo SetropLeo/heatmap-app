@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Heatmap Viewer</title>
+    <style>
+        canvas {
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>Heatmap Gerado</h2>
+    <canvas id="heatmap" width="1200" height="800"></canvas>
+
+    <script>
+        async function loadData() {
+            const res = await fetch("http://localhost:3000/heatmap");
+            return res.json();
+        }
+
+        function drawHeatmap(events) {
+            const canvas = document.getElementById("heatmap");
+            const ctx = canvas.getContext("2d");
+
+            const density = {};
+
+            events.forEach(ev => {
+                if (ev.type !== "move" && ev.type !== "click") return;
+
+                const key = `${ev.x},${ev.y}`;
+                density[key] = (density[key] || 0) + 1;
+            });
+
+            for (let key in density) {
+                const [x, y] = key.split(",").map(Number);
+                const value = density[key];
+
+                ctx.fillStyle = `rgba(255,0,0,${Math.min(value / 20, 1)})`;
+                ctx.fillRect(x - 5, y - 5, 10, 10);
+            }
+        }
+
+        loadData().then(drawHeatmap);
+    </script>
+
+</body>
+
+</html>
