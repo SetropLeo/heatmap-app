@@ -2,6 +2,7 @@
 
 let eventBatchQueue = [];
 let lastMove = 0;
+let userId = null;
 const anonymousId = crypto.randomUUID();
 const hostName = window.location.hostname;
 
@@ -16,13 +17,34 @@ const domain = "http://localhost:3000";
 const eventsEndpoint = `${domain}/heatmap/events`;
 const usersEndpoint = `${domain}/heatmap/identify`;
 
+// ----------- Event Storage ----------- //
+
+function loadEvents() {
+  try {
+    return JSON.parse(sessionStorage.getItem("heatmap_events") || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function saveEvents(events) {
+  sessionStorage.setItem("heatmap_events", JSON.stringify(events));
+}
+
+function appendEvent(event) {
+  const events = loadEvents();
+  events.push(event);
+  saveEvents(events);
+}
+
 // ----------- Event Handlers ----------- //
 
 const onMouseMove = (e) => {
   const now = performance.now();
   if (now - lastMove > 50) {
     lastMove = now;
-    eventBatchQueue.push({
+
+    appendEvent({
       ...defaultEventData,
       type: "move",
       x: e.clientX,
@@ -32,8 +54,8 @@ const onMouseMove = (e) => {
   }
 };
 
-const onMouseScroll = (e) => {
-  eventBatchQueue.push({
+const onMouseScroll = () => {
+  appendEvent({
     ...defaultEventData,
     type: "scroll",
     scrollY: window.scrollY,
@@ -50,7 +72,7 @@ const onClick = (e) => {
     "Unknown"
   ).trim();
 
-  eventBatchQueue.push({
+  appendEvent({
     ...defaultEventData,
     type: "click",
     x: e.clientX,
@@ -60,15 +82,9 @@ const onClick = (e) => {
   });
 };
 
-function setupEventListeners() {
-  document.addEventListener("mousemove", onMouseMove);
-  document.addEventListener("scroll", onMouseScroll);
-  document.addEventListener("click", onClick);
-}
+// ----------- Data ----------- //
 
-// ----------- Data Sending ----------- //
-
-const identifyUser = () => {
+const getUserIdentity = () => {
   const ua = navigator.userAgent;
 
   const identity = {
@@ -82,19 +98,43 @@ const identifyUser = () => {
         : "desktop",
   };
 
-  console.log("Identifying user:", identity);
-  navigator.sendBeacon(usersEndpoint, JSON.stringify(identity));
+  return identity;
 };
 
-const sendEventBatch = () => {
-  if (eventBatchQueue.length === 0) return;
+// ----------- Handler to Download ----------- //
 
-  navigator.sendBeacon(eventsEndpoint, JSON.stringify(eventBatchQueue));
+const initHandlerToDownload = () => {
+  document.getElementById("download-heatmap-data").onclick = () => {
+    // download the data as a JSON file
+    const dataStr =
+      "data:text/json;charset=utf-8," +
+      encodeURIComponent(
+        JSON.stringify({
+          user: getUserIdentity(),
+          events: loadEvents(),
+        })
+      );
 
-  eventBatchQueue = [];
+    const element = document.createElement("a");
+    element.setAttribute("href", dataStr);
+    element.setAttribute("download", `heatmap_data_${anonymousId}.json`);
+    document.body.appendChild(element);
+    element.click();
+    element.remove();
+  };
 };
 
 // ----------- Initialization ----------- //
-identifyUser();
-setupEventListeners();
-setInterval(sendEventBatch, 1500);
+
+const setupEventListeners = () => {
+  document.addEventListener("mousemove", onMouseMove);
+  document.addEventListener("scroll", onMouseScroll);
+  document.addEventListener("click", onClick);
+};
+
+function init() {
+  setupEventListeners();
+  initHandlerToDownload();
+}
+
+init();

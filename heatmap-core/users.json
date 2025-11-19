@@ -1,17 +1,7 @@
 [
   {
     "origin": "127.0.0.1",
-    "userId": "488d8b27-d35c-4968-81da-ff8a5f52b356",
-    "user_device_type": "desktop"
-  },
-  {
-    "origin": "127.0.0.1",
-    "userId": "52cb689e-2f55-47e0-aa78-8ced55d23566",
-    "user_device_type": "desktop"
-  },
-  {
-    "origin": "127.0.0.1",
-    "userId": "92bc1824-e645-43b1-9707-df5f684f7444",
+    "userId": "da8b1e05-7e3e-48dc-923e-7467ada669ea",
     "user_device_type": "desktop"
   }
 ]
